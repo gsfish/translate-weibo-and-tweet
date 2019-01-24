@@ -12,7 +12,7 @@ Run the following command to download requirements:
 pip install -r requirements -t lib
 ```
 
-Configure your KEYs in `app.py`, deploy it to your GAE service.
+Configure your KEYs in `main.py`, deploy it to your GAE service.
 
 Create 3 IFTTT Applets:
 
