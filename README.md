@@ -1,6 +1,6 @@
 # translate-weibo-and-tweet
 
-Translate your Weibo into English and post a Tweet. Thanks for IFTTT, Google and NetEase.
+Translate your Weibo into English and post a Tweet. Thanks to IFTTT, Google and NetEase.
 
 ## Usage
 
@@ -16,9 +16,9 @@ Configure your KEYs in `main.py`, deploy it to your GAE service.
 
 Create 3 IFTTT Applets:
 
-1. when post a weibo, send it to cloud service
-2. when trigger webhook, post a tweet
-3. when trigger webhook, post a tweet with image
+1. when post a weibo, send it to cloud service (if Weibo then Webhooks)
+2. when trigger webhook, post a tweet (if Webhooks then Twitter)
+3. when trigger webhook, post a tweet with image (if Webhooks then Twitter)
 
-Turn on and enjoy the automatic Weibo translation service!
+Turn on the Applets and enjoy the free automatic Weibo translation service!
 
