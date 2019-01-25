@@ -46,14 +46,8 @@ def translate_and_tweet():
         'salt': tran_salt,
         'sign': tran_sign,
     }
-    try:
-        tran_resp = requests.post(YOUDAO_API, data=tran_payload)
-    except Exception as e:
-        msg = str(e)
-        app.logger.error(msg)
-        return jsonify({'detail': msg}), 500
-    else:
-        tran_res = tran_resp.json()
+    tran_resp = requests.post(YOUDAO_API, data=tran_payload)
+    tran_res = tran_resp.json()
 
     if tran_res['errorCode'] != '0':
         msg = 'Translation Error: Failed to translate {0!r}'.format(text_raw)
@@ -80,7 +74,7 @@ def translate_and_tweet():
         app.logger.error(msg)
         return jsonify({'detail': msg}), 500
     else:
-        return jsonify({'detail': 'Success.'}), 200
+        return jsonify({'detail': 'Success'}), 200
 
 
 if __name__ == '__main__':
