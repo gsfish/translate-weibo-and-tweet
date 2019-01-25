@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import random
+import time
+import hmac
 import hashlib
+import base64
+import random
+from urllib.parse import urlparse
 
 import requests
 from flask import *
@@ -10,10 +14,10 @@ from flask import *
 
 # in post body when webhook send requests, and ifttt filter after webhook triggered
 AUTH_KEY = ''
-# for youdao cloud api
-YOUDAO_APP_KEY = ''
-YOUDAO_SECRET_KEY = ''
-YOUDAO_API = 'https://openapi.youdao.com/api'
+# for tencent translator api
+TENCENT_SECRET_ID = ''
+TENCENT_SECRET_KEY = ''
+TENCENT_API = 'https://tmt.tencentcloudapi.com/'
 # for ifttt webhooks service
 WEBHOOK_KEY = ''
 WEBHOOK_EVENT_TEXT = 'text_weibo_posted'
@@ -24,51 +28,62 @@ WEBHOOK_URL_IMAGE = 'https://maker.ifttt.com/trigger/{0}/with/key/{1}'.format(WE
 app = Flask(__name__)
 
 
+def get_sign(params):
+    method = 'GET'
+    endpoint = urlparse(TENCENT_API).netloc
+    query_str = '&'.join('{0}={1}'.format(k, params[k]) for k in sorted(params))
+    str_to_sign = '{0}{1}/?{2}'.format(method, endpoint, query_str)
+    hmac_str = hmac.new(TENCENT_SECRET_KEY.encode('utf-8'), str_to_sign.encode('utf-8'), hashlib.sha1).digest()
+    signature = base64.b64encode(hmac_str)
+    return signature
+
+
 @app.route('/', methods=['POST'])
 def translate_and_tweet():
     # validate auth_key
     data = request.get_json()
     if data['auth_key'] != AUTH_KEY:
-        msg = 'Invalid auth_key {0!r}'.format(data['auth_key'])
+        msg = 'Authorization Error: Invalid auth_key {0!r}'.format(data['auth_key'])
         app.logger.warning(msg)
         return jsonify({'detail': msg}), 401
 
     # translate weibo text into english
-    text_raw = data['text']
-    tran_salt = str(random.randint(1, 65536))
-    tran_hash_str = (YOUDAO_APP_KEY+text_raw+tran_salt+YOUDAO_SECRET_KEY).encode('utf-8')
-    tran_sign = hashlib.md5(tran_hash_str).hexdigest()
     tran_payload = {
-        'q': text_raw,
-        'from': 'auto',
-        'to': 'EN',
-        'appKey': YOUDAO_APP_KEY,
-        'salt': tran_salt,
-        'sign': tran_sign,
+        'Action': 'TextTranslate',
+        'Version': '2018-03-21',
+        'SecretId': TENCENT_SECRET_ID,
+        'Timestamp': int(time.time()),
+        'Nonce': random.randint(1, 65536),
+        'Region': 'na-siliconvalley',
+        'SourceText': data['text'],
+        'Source': 'auto',
+        'Target': 'en',
+        'ProjectId': 0
     }
-    tran_resp = requests.post(YOUDAO_API, data=tran_payload)
+    tran_payload['Signature'] = get_sign(tran_payload)
+    tran_resp = requests.get(TENCENT_API, params=tran_payload)
     tran_res = tran_resp.json()
 
-    if tran_res['errorCode'] != '0':
-        msg = 'Translation Error: Failed to translate {0!r}'.format(text_raw)
+    if 'Error' in tran_res['Response']:
+        msg = 'Translation Error: {0}'.format(tran_res['Response']['Error']['Message'])
         app.logger.error(msg)
         return jsonify({'detail': msg}), 500
 
     # post a tweet
-    post_text = tran_res['translation'][0]
-    post_image_url = data.get('image_url', None)
-    if post_image_url:
-        post_url = WEBHOOK_URL_IMAGE
+    tweet_text = tran_res['Response']['TargetText']
+    tweet_image_url = data.get('image_url', None)
+    if tweet_image_url:
+        tweet_url = WEBHOOK_URL_IMAGE
     else:
-        post_url = WEBHOOK_URL_TEXT
-    post_payload = {
+        tweet_url = WEBHOOK_URL_TEXT
+    tweet_payload = {
         'value1': AUTH_KEY,
-        'value2': post_text,
-        'value3': post_image_url
+        'value2': tweet_text,
+        'value3': tweet_image_url
     }
 
     try:
-        requests.post(post_url, json=post_payload)
+        requests.post(tweet_url, json=tweet_payload)
     except Exception:
         msg = 'POST Error: Failed to trigger webhook service'
         app.logger.error(msg)

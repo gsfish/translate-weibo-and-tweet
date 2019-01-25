@@ -1,10 +1,10 @@
 # translate-weibo-and-tweet
 
-Translate your Weibo into English and post a Tweet. Thanks to IFTTT, Google and NetEase.
+Translate your Weibo into English and post a Tweet. Thanks to IFTTT, Google and Tencent/NetEase.
 
 ## Usage
 
-Register in Youdao Cloud and Google Cloud Platform, creat an App Engine.
+Register in Tencent/Youdao Cloud and Google Cloud Platform, creat an App Engine.
 
 Run the following command to download requirements:
 
